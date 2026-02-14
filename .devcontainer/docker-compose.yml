@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ..:/workspace:cached
+      - mise-data:/home/dev/.mise
+      - claude-data:/home/dev/.claude
+    command: sleep infinity
+
+volumes:
+  mise-data:
+  claude-data:

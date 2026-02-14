@@ -1,0 +1,102 @@
+# Arch Linux Dev Container FAQ
+
+You have probably more questions regarding the setup, so here's a short FAQ explaining
+the most important bits and pieces.
+
+## Why Arch Linux?
+
+See README.
+
+## Why mise?
+
+[mise](https://mise.jdx.dev/) is a great tool for managing toolchains, and even though Arch Linux has a package for
+basically everything (and everything missing in AUR), you sometimes need certain versions of tools, that are not
+available in the repository anymore, like older python versions. Managing such toolchains with mise is a breeze,
+disconnecting the toolchain from the distro if necessary.
+
+Additionally, mise works outside of dev containers as well, like in CI or for people on other (operating-)systems,
+so if you have a development team with a heterogen development environment (like an open source project or a diverse
+development team) managing the exact toolchain with something else than your distro is a good way to go. And for
+everything not manageable with mise, we got Arch.
+
+## Why is claude-code included?
+
+The dev container contains a cache directory for claude-code state and installs the claude extension for VSCode if
+you use it. This is just to demonstrate how to integrate a tool such as claude-code in the setup. As mentioned in
+the README, I use dev container to limit the blast-radius for AI tools (like claude-code) as well, so having a simple
+example at hand just helps with adaption.
+
+It's not important for the general dev container setup, so you can remove it, if you don't use claude-code.
+
+## Why are you using a custom startup.sh script?
+
+In some projects it's necessary to run some more logic at project startup. The current script has just one line
+(or, if you want to remove root-access, two), but you might want to add some stuff at some point, like seeding of
+environment, triggering a webhook or generating some temporary access-token and storing them in the environment.
+
+To simplify adding that stuff, the startup.sh is already available.
+
+## Why are you using a docker-compose.yml for one container?
+
+This has the same reason as the startup.sh: So it's prepared for your project. Dev Containers often need additional
+services, like a database or similar. Adding those to an existing docker-compose.yml is quicker/simpler than setting
+this up in every project again.
+
+Additionally, creating volumes for persisting data is a lot simpler that way - like already done for mise and
+claude-code.
+
+## Why split the two installs?
+
+In the Dockerfile are two different `pacman -S` calls, installing different packages. The first one is for installing
+packages that are important for the dev container itself, not your project. This line will basically never change,
+regardless of your project. The second line installs tools needed for the corresponding project, your compiler, linter,
+whatever you need. And that's basically the reason why the two install lines are split: to manage different lists for
+different purpose.
+
+Thinking ahead, the dependencies for the dev container might change, something new gets added, like `curl` or similar,
+then you can add it to the first line, and just exchange that line. It's easy to grasp the purpose, and see that it's
+independent from the project itself.
+
+## Should I drop root-permissions?
+
+This is a difficult question. Inside the dev container you are "dev", an unprivileged user - but with sudo priviledges.
+But let's break it down a bit:
+
+Why does the "dev" user have have sudo permissions? Sometimes you need root-permissions. It's very rare, but there are
+situations that require root. In those situations sudo acts as escape-hatch, allowing you to just do your work.
+
+Is it bad? Well, the root user is still limited to the container, not the whole system. This means, that even though
+you are root inside the container, you can't access most of the kernel or any devices as example, so you can't manipulate
+the firewall as example, or interact with any devices attached to the system.
+
+So, having an escape-hatch is okay, I guess, but if you want to get rid of it you can scroll to the bottom of startup.sh
+and uncomment the line with that removes the sudoers file (see the comment, you can't miss it). Afterwards you still have
+sudo installed and could use it in theory, but you need a password to do so, and the password is... not set, so you can't
+enter it. And users with no valid password can't even change their password, because `passwd` asks for the current password,
+which doesn't exist. And no, `su` doesn't work as well, because root has no password set as well.
+
+## How to change the default shell?
+
+Because people like using other shells than bash, I've prepared this as good as possible already:
+
+- first, install the shell you want. You can add this to the list of dev container specific dependencies, like
+[zsh](https://archlinux.org/packages/extra/x86_64/zsh/) or [fish](https://archlinux.org/packages/extra/x86_64/fish/).
+- The `useradd` command gets called explicitly with `-s /usr/bin/bash` to make this obvious: Just change the default shell
+here, like `-s /usr/bin/zsh` or `-s /usr/bin/fish`.
+- finally, everything that gets written to `.bashrc` needs adjustment to work for your shell.
+
+## How to use dev container features?
+
+Dev Containers provide their own so called "features", which are basically scripts preparing your dev container. Most
+of them are created with Debian in mind, some even for RHEL, but none of them are available for Arch Linux - but
+this is fine. Arch Linux provides a lot of packages out of the box, and most features basically just install different
+software inside your container, so they are usually not important.
+
+Additionally, dev container features can be considered bad practice, because most of them basically download some
+external shell script and execute it - not that trustworthy to be honest.
+
+## How to use docker-in-docker?
+
+Simple: Don't. docker-in-docker requires the dev container to run "privileged", which defeats the purpose of isolation.
+I think [Trend Micro](https://www.trendmicro.com/en_us/research/19/l/why-running-a-privileged-container-in-docker-is-a-bad-idea.html) has a nice explanation of the details (even though a
+bit lengthy).
