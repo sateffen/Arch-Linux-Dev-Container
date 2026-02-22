@@ -1,10 +1,9 @@
 FROM docker.io/archlinux:base
 
-
 # Update the container and install all packages we need for devcontainer in general
 # This is seperated from the actual project specific packages for readability
 RUN pacman -Syu --noconfirm && \
-    pacman -S --noconfirm sudo git less && \
+    pacman -S --noconfirm sudo git less nftables && \
 
 # Then we install the project-specific packages, so the ones we need want for development
 # Independent of the devcontainer. Finally we clear the pacman cache

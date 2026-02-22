@@ -5,7 +5,7 @@ the most important bits and pieces.
 
 ## Why Arch Linux?
 
-See README.
+See [README](./README.md).
 
 ## Isn't Arch Linux unstable?
 
@@ -21,7 +21,7 @@ available in the repository anymore, like older python versions. Managing such t
 disconnecting the toolchain from the distro if necessary.
 
 Additionally, mise works outside of dev containers as well, like in CI or for people on other (operating-)systems,
-so if you have a development team with a heterogen development environment (like an open source project or a diverse
+so if you have a development team with a heterogeneous development environment (like an open source project or a diverse
 development team) managing the exact toolchain with something else than your distro is a good way to go. And for
 everything not manageable with mise, we got Arch.
 
@@ -36,20 +36,31 @@ It's not important for the general dev container setup, so you can remove it, if
 
 ## Why are you using a custom startup.sh script?
 
-In some projects it's necessary to run some more logic at project startup. The current script has just one line
-(or, if you want to remove root-access, two), but you might want to add some stuff at some point, like seeding of
-environment, triggering a webhook or generating some temporary access-token and storing them in the environment.
+In some projects it's necessary to run some more logic at project startup. The current script does some basic stuff
+like preparing the /home/dev folder so volumes belong to the right user or setting up firewall rules. Additionally,
+at the moment the *startup.sh* is the only time the container can execute any commands as root, as root-access gets
+dropped at the end of the script.
 
-To simplify adding that stuff, the startup.sh is already available.
+If you need any special startup logic yourself, just hook in and you're good to go.
 
 ## Why are you using a docker-compose.yml for one container?
 
-This has the same reason as the startup.sh: So it's prepared for your project. Dev Containers often need additional
-services, like a database or similar. Adding those to an existing docker-compose.yml is quicker/simpler than setting
-this up in every project again.
+This has three simple reasons:
 
-Additionally, creating volumes for persisting data is a lot simpler that way - like already done for mise and
+1. For development you might need additional containers, like a database or whatever. The docker-compose.yml allows
+you to easily add your own containers to the setup, without changing too much.
+2. Docker compose will setup a private network for each compose-stack, which we use to limit our networking (see
+firewall rules in the *startup.sh* ). Effectively, we prevent having any other containers in the same network without
+explicitly stating they are needed (in the *docker-compose.yml* file).
+3. Additionally, creating volumes for persisting data is a lot simpler that way - like already done for mise and
 claude-code.
+
+## Why block access to private IPs?
+
+If any supply-chain attack actually happens, they might start scanning your local network. Inside your network you
+might have some interesting stuff, like routers, printers or anything potentially attackable. By limiting outgoing
+traffic, we can make sure your local network is protected. Additionally, usually local access can get limited like
+this without any issues. If it doesn't work for you, you can remove those rules, but I encourage you to t keep them.
 
 ## Why split the two installs?
 
@@ -80,7 +91,7 @@ can't enter one. If you use `passwd` to set one you need to enter your current p
 again - it is not set. `su` doesn't work as well, because root has no password set as well, soooo... well it's hard.
 
 In theory you can try stuff with SUID (you can use your favorite search engine to learn about "privesc suid", short
-for "privilege escalation suid"), but I think it shouldn't be doable in this scenario.
+for "privilege escalation suid"), but as far as I know this is not possible.
 
 ## How to change the default shell?
 
@@ -105,5 +116,5 @@ external shell script and execute it - not that trustworthy to be honest.
 ## How to use docker-in-docker?
 
 Simple: Don't. docker-in-docker requires the dev container to run "privileged", which defeats the purpose of isolation.
-I think [Trend Micro](https://www.trendmicro.com/en_us/research/19/l/why-running-a-privileged-container-in-docker-is-a-bad-idea.html) has a nice explanation of the details (even though a
-bit lengthy).
+I think [Trend Micro](https://www.trendmicro.com/en_us/research/19/l/why-running-a-privileged-container-in-docker-is-a-bad-idea.html)
+has a nice explanation of the details (even though a bit lengthy).
