@@ -7,6 +7,12 @@ the most important bits and pieces.
 
 See README.
 
+## Isn't Arch Linux unstable?
+
+No, Arch Linux is, in fact, very stable. I'm using Arch on my desktop, laptop, homeserver, server in datacenter -
+basically everywhere. In >10 years the only issues I had were things where I actually did something wrong, not
+Arch failing on me. Plus, we are working in a container, if the container fails, so what?
+
 ## Why mise?
 
 [mise](https://mise.jdx.dev/) is a great tool for managing toolchains, and even though Arch Linux has a package for
@@ -57,23 +63,24 @@ Thinking ahead, the dependencies for the dev container might change, something n
 then you can add it to the first line, and just exchange that line. It's easy to grasp the purpose, and see that it's
 independent from the project itself.
 
-## Should I drop root-permissions?
+## Why drop root-permissions?
 
-This is a difficult question. Inside the dev container you are "dev", an unprivileged user - but with sudo priviledges.
-But let's break it down a bit:
+In my experience, you don't need root permissions for development work. There are some usecases, where you can simply
+not drop sudo-permissions (see *startup.sh* and scroll down to the bottom), but for development an unprivileged user
+like "dev" is usually fine.
 
-Why does the "dev" user have have sudo permissions? Sometimes you need root-permissions. It's very rare, but there are
-situations that require root. In those situations sudo acts as escape-hatch, allowing you to just do your work.
+And yes, even if you enable sudo for "dev", it's limited to the container, so the blast radius stays small, but the
+principal of least privilege demands removing everything we don't need.
 
-Is it bad? Well, the root user is still limited to the container, not the whole system. This means, that even though
-you are root inside the container, you can't access most of the kernel or any devices as example, so you can't manipulate
-the firewall as example, or interact with any devices attached to the system.
+## Is root actually not reachable?
 
-So, having an escape-hatch is okay, I guess, but if you want to get rid of it you can scroll to the bottom of startup.sh
-and uncomment the line with that removes the sudoers file (see the comment, you can't miss it). Afterwards you still have
-sudo installed and could use it in theory, but you need a password to do so, and the password is... not set, so you can't
-enter it. And users with no valid password can't even change their password, because `passwd` asks for the current password,
-which doesn't exist. And no, `su` doesn't work as well, because root has no password set as well.
+Well, if you remove the sudoers entry (like at the bottom of *startup.sh*) reaching root should be impossible. If you
+want to execute `sudo` you have to enter a password that... isn't set. It's not empty, it's actually not set, so you
+can't enter one. If you use `passwd` to set one you need to enter your current password, which doesn't work, because -
+again - it is not set. `su` doesn't work as well, because root has no password set as well, soooo... well it's hard.
+
+In theory you can try stuff with SUID (you can use your favorite search engine to learn about "privesc suid", short
+for "privilege escalation suid"), but I think it shouldn't be doable in this scenario.
 
 ## How to change the default shell?
 

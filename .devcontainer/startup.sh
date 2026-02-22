@@ -12,7 +12,7 @@ sudo chown -R dev:dev /home/dev
 
 #####
 # WARNING
-# Activate this to REMOVE sudo-access for "dev". That way you can't
-# get root inside your container, providing another level of security
+# Remove this to retain root access while working. Usually you won't need
+# root permissions, so dropping it here is the safe choice.
 #####
-# sudo rm /etc/sudoers.d/dev
+sudo rm /etc/sudoers.d/dev
